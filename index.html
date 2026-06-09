@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Bumble</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Bumble Sans es una grotesca geométrica bold; Inter es el fallback web más fiel.
+     NO usar Nunito/Quicksand/Baloo (redondeadas) — la identidad 2024 NO es bubbly. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bumble:#FFC629;          /* amarillo Bumble exacto */
+    --bg:#FFFFFF;
+    --ink:#1A1A1A;             /* negro/tinta */
+    --ink-soft:#6E6E6E;        /* gris secundario */
+    --hairline:#ECECEC;        /* línea fina */
+    --photo-grey:#E4E4E4;      /* hueco de imagen neutro */
+    --card-grey:#F6F6F6;       /* fondo tarjetas de texto */
+    --verify:#2D9CDB;          /* azul de verificación (NUNCA amarillo) */
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,system-ui,sans-serif;
+    background:#DEDFE3;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;color:var(--ink);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- Marco tipo móvil ---------- */
+  .phone{
+    position:relative;
+    width:420px;max-width:100vw;
+    height:90vh;max-height:900px;
+    background:var(--bg);border-radius:24px;overflow:hidden;
+    box-shadow:0 30px 70px rgba(0,0,0,.28);
+    display:flex;flex-direction:column;
+  }
+
+  /* ---------- Barra superior con logo ---------- */
+  .topbar{
+    flex:none;
+    height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;
+    background:var(--bg);
+    border-bottom:1px solid var(--hairline);
+    z-index:30;
+  }
+  .topbar .icon-btn{
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--ink);
+  }
+  .topbar .icon-btn svg{width:24px;height:24px;}
+  .logo{display:flex;align-items:center;gap:7px;}
+  .logo .wordmark{
+    /* La "B" mayúscula es el héroe. Capitalizado: "Bumble" (nunca minúscula). */
+    font-weight:800;font-size:23px;letter-spacing:-.6px;color:var(--ink);
+  }
+  .hex{width:25px;height:25px;}
+
+  .scroll{
+    flex:1;overflow-y:auto;overflow-x:hidden;
+    scrollbar-width:none;
+    padding:8px 8px 120px;
+    display:flex;flex-direction:column;gap:10px;
+    background:var(--bg);
+    scroll-behavior:smooth;
+    position:relative;
+  }
+  .scroll::-webkit-scrollbar{display:none;}
+
+  /* ---------- Indicador de posición (puntos arriba a la derecha) ---------- */
+  .dots{
+    position:absolute;
+    top:64px;right:14px;
+    display:flex;flex-direction:column;gap:6px;
+    z-index:25;
+    pointer-events:none;
+  }
+  .dots span{
+    width:5px;height:5px;border-radius:50%;
+    background:rgba(0,0,0,.18);
+  }
+  .dots span.active{
+    background:var(--bumble);
+    width:6px;height:6px;
+    box-shadow:0 0 0 2px rgba(255,198,41,.18);
+  }
+
+  /* ---------- Tarjeta base ---------- */
+  .card{
+    position:relative;
+    border-radius:18px;
+    overflow:visible;
+  }
+
+  /* ---------- Par de botones por tarjeta (esquina inferior IZQUIERDA) ---------- */
+  /* Elemento característico de Bumble: cada foto/prompt tiene su propio par de
+     acciones. "Me gusta" (corazón) reacciona a ESE elemento concreto.
+     "Cumplido" (corazón dentro de un bocadillo) adjunta un mensaje de hasta
+     150 caracteres a esa foto/prompt en particular. */
+  .card-actions{
+    position:absolute;
+    left:12px;bottom:12px;
+    display:flex;align-items:center;gap:9px;
+    z-index:8;
+  }
+  .ybtn{
+    width:44px;height:44px;border-radius:50%;
+    background:var(--bumble);
+    border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.18);
+    transition:transform .12s ease;
+  }
+  .ybtn:active{transform:scale(.88);}
+  .ybtn svg{width:21px;height:21px;color:var(--ink);}
+  .ybtn.compliment{width:40px;height:40px;}
+  .ybtn.compliment svg{width:19px;height:19px;}
+
+  /* ---------- Foto (hueco) ---------- */
+  .photo{
+    width:100%;
+    aspect-ratio:3/4;
+    background:var(--photo-grey);     /* HUECO IMAGEN — sin texto ni icono */
+    border-radius:18px;
+    overflow:hidden;
+    position:relative;
+  }
+  .photo .fade{
+    position:absolute;left:0;right:0;bottom:0;height:42%;
+    background:linear-gradient(to top,rgba(0,0,0,.55),transparent);
+  }
+  .status{
+    position:absolute;top:14px;left:14px;
+    display:flex;align-items:center;gap:6px;
+    background:rgba(0,0,0,.32);backdrop-filter:blur(3px);
+    color:#fff;font-size:12px;font-weight:600;
+    padding:5px 10px;border-radius:20px;
+  }
+  .status .g{width:8px;height:8px;border-radius:50%;background:#46d369;}
+
+  /* Hero: nombre + edad sobre la primera foto */
+  .hero-name{
+    position:absolute;left:18px;bottom:16px;right:70px;color:#fff;z-index:3;
+  }
+  .hero-name .nm{display:flex;align-items:center;gap:9px;}
+  .hero-name h1{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.4px;}
+  .hero-name .age{font-size:26px;font-weight:500;}
+  .verified{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;
+  }
+  .verified svg{width:22px;height:22px;}
+
+  /* ---------- Tarjetas de texto ---------- */
+  .txtcard{
+    background:var(--card-grey);
+    border-radius:18px;
+    padding:22px 20px 24px;
+    /* espacio reservado para el par de botones inferior izquierdo */
+    padding-bottom:72px;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .kicker{
+    font-size:13px;font-weight:700;letter-spacing:.2px;
+    color:var(--ink-soft);margin-bottom:10px;
+  }
+  .bio{font-size:16px;line-height:1.55;color:var(--ink);white-space:pre-line;font-weight:500;}
+
+  /* prompt / Opening Move (pregunta gris pequeña + respuesta bold) */
+  .prompt .q{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px;}
+  .prompt .a{font-size:21px;line-height:1.35;font-weight:800;color:var(--ink);letter-spacing:-.2px;}
+
+  /* ---------- Pills: Lo básico ---------- */
+  .chips{display:flex;flex-wrap:wrap;gap:9px;}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#fff;border:1px solid var(--hairline);
+    border-radius:30px;padding:9px 14px;
+    font-size:14px;font-weight:600;color:var(--ink);
+  }
+  .chip svg{width:18px;height:18px;color:var(--ink-soft);flex:none;}
+
+  /* intereses */
+  .interest{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#fff;border:1px solid var(--hairline);
+    border-radius:30px;padding:9px 15px;font-size:14px;font-weight:600;color:var(--ink);
+  }
+  .interest svg{width:18px;height:18px;color:var(--ink-soft);flex:none;}
+  .interest.shared{background:var(--bumble);border-color:var(--bumble);color:var(--ink);}
+  .interest.shared svg{color:var(--ink);}
+
+  /* ---------- Botones inferiores (footer) ---------- */
+  .actions{
+    position:absolute;left:0;right:0;bottom:0;
+    height:112px;
+    display:flex;align-items:center;justify-content:center;gap:24px;
+    background:linear-gradient(to top,#fff 62%,rgba(255,255,255,0));
+    z-index:40;
+  }
+  .act{
+    border:none;border-radius:50%;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.14);
+    transition:transform .12s ease;
+  }
+  .act:active{transform:scale(.9);}
+  /* Pass: X en círculo blanco neutro */
+  .act.pass{width:60px;height:60px;background:#fff;border:1px solid var(--hairline);}
+  .act.pass svg{width:26px;height:26px;color:var(--ink);}
+  /* SuperSwipe: estrella negra de 5 puntas en círculo amarillo */
+  .act.sup{width:50px;height:50px;background:var(--bumble);}
+  .act.sup svg{width:24px;height:24px;color:var(--ink);}
+  /* Like: corazón, énfasis amarillo */
+  .act.like{width:62px;height:62px;background:var(--bumble);}
+  .act.like svg{width:30px;height:30px;color:var(--ink);}
+
+  @media (max-width:430px){
+    body{background:#fff;}
+    .phone{width:100vw;height:100vh;max-height:none;border-radius:0;box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+
+    <!-- ===== BARRA SUPERIOR + LOGO ===== -->
+    <div class="topbar">
+      <div class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="logo">
+        <!-- Logo oficial de Bumble 2024 (imagen de la carpeta). Sin texto añadido. -->
+        <img src="Bumble_Logo_2024.svg" alt="Bumble" style="height:22px;width:auto;display:block;">
+      </div>
+      <div class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll">
+
+      <!-- Indicador de posición vertical (punto activo en amarillo) -->
+      <div class="dots" aria-hidden="true">
+        <span class="active"></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <!-- ===== FOTO PRINCIPAL (HUECO) ===== -->
+      <div class="card">
+        <!-- FOTO 1 :: principal · leyendo poesía feminista -->
+        <div class="photo" style="background:url('leyendo-poesia-feminista.png') center/cover;">
+          <div class="status"><span class="g"></span>Activo hace poco</div>
+          <div class="fade"></div>
+          <div class="hero-name">
+            <div class="nm">
+              <h1>Marc</h1><span class="age">22</span>
+              <span class="verified" title="Verificado">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#2D9CDB"/><path d="M7.2 12.4l3.1 3.1 6.4-6.7" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </div>
+            <!-- distancia -->
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:14px;font-weight:600;">
+              <svg style="width:16px;height:16px;flex:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              A 0 metros de ti
+            </div>
+          </div>
+        </div>
+        <!-- en la foto principal los botones van a la derecha para no tapar el nombre -->
+        <div class="card-actions" style="left:auto;right:12px;">
+          <button class="ybtn like" aria-label="Me gusta esta foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+        <!-- Cumplido: corazón dentro de un bocadillo. Adjunta un mensaje de hasta 150 caracteres a esta foto concreta. -->
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== SOBRE MÍ ===== -->
+      <div class="card">
+        <div class="txtcard">
+          <div class="kicker">Sobre mí</div>
+          <p class="bio">Estudio el doble grado de Psicología y Filosofía. Trabajo en una asociación de niños con discapacidad.
+
+En mi tiempo libre me encontrarás leyendo poesía feminista, tocando la guitarra, paseando por la naturaleza, de voluntario en un refugio de perros abandonados o ayudando a alguna abuelita a cruzar la calle. &#128054;&#128116;</p>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <!-- Cumplido: adjunta mensaje (máx. 150 car.) a esta tarjeta -->
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== LO BÁSICO (badges con iconos monoline) ===== -->
+      <div class="card">
+        <div class="txtcard">
+          <div class="kicker">Lo básico</div>
+          <div class="chips">
+            <span class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18M18 3v18M6 8h12M6 16h12"/></svg>187 cm
+            </span>
+            <span class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Barcelona
+            </span>
+            <span class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 9l10 6 10-6-10-6z"/><path d="M6 12v4c0 1.5 3 3 6 3s6-1.5 6-3v-4"/></svg>Psicología y Filosofía
+            </span>
+            <span class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Asociación de niños con discapacidad
+            </span>
+            <span class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><path d="M9.5 10.5l1.7 1.7 3.3-3.4"/></svg>Una relación seria
+            </span>
+            <span class="chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>No fumo
+            </span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== OPENING MOVE 1: libro/película que cambió tu forma de pensar ===== -->
+      <div class="card">
+        <div class="txtcard prompt">
+          <div class="q">Un libro o película que cambió mi forma de pensar</div>
+          <div class="a">La poesía feminista de Alejandra Pizarnik, y todo lo que canta Olivia Rodrigo sobre crecer.</div>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta respuesta"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== FOTO 2 (HUECO) ===== -->
+      <div class="card">
+        <!-- FOTO 2 · surf -->
+        <div class="photo" style="background:url('surf.png') center/cover;"></div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== OPENING MOVE 2: objetivo en la vida (no pobreza) ===== -->
+      <div class="card">
+        <div class="txtcard prompt">
+          <div class="q">Mi objetivo en la vida es...</div>
+          <div class="a">Ayudar al máximo número de personas posibles y que no haya pobreza en el mundo.</div>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta respuesta"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== FOTO 3 — VOLUNTARIADO EN GUATEMALA (HUECO) ===== -->
+      <div class="card">
+        <!-- FOTO 3 :: GUATEMALA (voluntariado) -->
+        <div class="photo" style="background:url('voluntario-guatemala.png') center/cover;"></div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== OPENING MOVE 3: experiencia que me cambió (Guatemala) ===== -->
+      <div class="card">
+        <div class="txtcard prompt">
+          <div class="q">Una experiencia que me cambió...</div>
+          <div class="a">Pasé 3 meses en la Guatemala rural, en una asociación que apoyaba a mujeres maltratadas.</div>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta respuesta"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== MIS INTERESES (pills con iconos monoline; compartidos en amarillo) ===== -->
+      <div class="card">
+        <div class="txtcard">
+          <div class="kicker">Mis intereses</div>
+          <div class="chips">
+            <span class="interest shared">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h6v16H6a2 2 0 0 0-2 2V5z"/><path d="M20 5a2 2 0 0 0-2-2h-6v16h6a2 2 0 0 1 2 2V5z"/></svg>Poesía feminista
+            </span>
+            <span class="interest shared">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="3.2"/><path d="M5 11a7 7 0 0 1 14 0"/><path d="M5 11v3a2 2 0 0 0 2 2M19 11v3a2 2 0 0 1-2 2"/><path d="M12 18v2"/></svg>Geopolítica
+            </span>
+            <span class="interest shared">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>Olivia Rodrigo
+            </span>
+            <!-- añadido (editable): toca la guitarra -->
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="15.5" r="4.5"/><circle cx="8.5" cy="15.5" r="1"/><path d="M11.7 12.3 18 6"/><path d="M16.5 4.5 19.5 7.5"/></svg>Tocar la guitarra
+            </span>
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 6v14a2 2 0 0 0-2-2"/></svg>Lectura
+            </span>
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l5-9 4 6 3-5 6 8z"/><circle cx="17" cy="6" r="1.6"/></svg>Senderismo
+            </span>
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4-3 6-6 6-10a6 6 0 0 0-12 0c0 4 2 7 6 10z" /><path d="M12 11v10M9 14l3-3 3 3"/></svg>Naturaleza
+            </span>
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11c1.5-2 3-3 5-3s3.5 1 5 3"/><path d="M5 16c2-1 4-1.5 7-1.5s5 .5 7 1.5"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>Voluntariado
+            </span>
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.5 7 4 4 5.5V11c0 3 2.5 4.5 5 6 .3.2.7.2 1 0M14 5.5 17 4l3 1.5V11c0 3-2.5 4.5-5 6"/><circle cx="6" cy="8" r="1"/><circle cx="18" cy="8" r="1"/></svg>Perros
+            </span>
+            <span class="interest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8s2-2 7-2 7 2 7 2"/><path d="M5 8l-2 5a3 3 0 0 0 4 0zM19 8l-2 5a3 3 0 0 0 4 0z"/></svg>Derechos humanos
+            </span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== FOTO 4 (HUECO) ===== -->
+      <div class="card">
+        <!-- FOTO 4 · tocando la guitarra -->
+        <div class="photo" style="background:url('tocando-guitarra-habitacion.png') center/cover;"></div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== HIMNO (Spotify) — debajo de la foto tocando la guitarra ===== -->
+      <div class="card">
+        <div class="txtcard">
+          <div class="kicker">Mi himno</div>
+          <!-- añadido (editable): tema destacado de Spotify -->
+          <a href="https://open.spotify.com/intl-es/track/1yFFtnprNqGYpWUli91D2P" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--hairline);border-radius:14px;padding:11px 13px;text-decoration:none;color:inherit;">
+            <!-- carátula del single -->
+            <div style="width:50px;height:50px;border-radius:8px;flex:none;background:url('drivers-license.jpg') center/cover;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:15px;font-weight:700;color:var(--ink);">drivers license</div>
+              <div style="font-size:13px;color:var(--ink-soft);margin-top:2px;">Olivia Rodrigo</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:#1DB954;font-weight:700;">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.6 14.4a.6.6 0 0 1-.86.2c-2.35-1.43-5.3-1.76-8.8-.96a.62.62 0 1 1-.28-1.22c3.83-.87 7.1-.5 9.74 1.12.3.18.4.57.2.86zm1.23-2.74a.78.78 0 0 1-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 1 1-.45-1.49c3.64-1.1 8.16-.56 11.25 1.34.36.22.48.7.24 1.06zm.1-2.85C14.8 8.96 9.4 8.78 6.3 9.72a.94.94 0 1 1-.54-1.8c3.56-1.08 9.52-.87 13.26 1.35a.94.94 0 0 1-.96 1.61z"/></svg>
+                Spotify
+              </div>
+            </div>
+            <div style="width:34px;height:34px;border-radius:50%;flex:none;background:#1DB954;display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 24 24" fill="#fff" style="width:15px;height:15px;"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          </a>
+        </div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== FOTO 5 (HUECO) ===== -->
+      <div class="card">
+        <!-- FOTO 5 · voluntario en la perrera -->
+        <div class="photo" style="background:url('voluntario-perrera.png') center/cover;"></div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <!-- ===== FOTO 6 (HUECO) ===== -->
+      <div class="card">
+        <!-- FOTO 6 · ayudando a una abuela a cruzar -->
+        <div class="photo" style="background:url('ayudar-abuela-a-cruzar.png') center/cover;"></div>
+        <div class="card-actions">
+          <button class="ybtn like" aria-label="Me gusta esta foto"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg></button>
+          <button class="ybtn compliment" aria-label="Enviar un cumplido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 5.6A2.6 2.6 0 0 1 6.6 3h10.8A2.6 2.6 0 0 1 20 5.6v6.8a2.6 2.6 0 0 1-2.6 2.6H10l-4 3.4v-3.4h-.4"/><path d="M12 12.6s-2.9-1.9-3.7-3.3c-.6-1.1-.1-2.4 1.1-2.6.8-.1 1.5.4 2.6 1.4 1.1-1 1.8-1.5 2.6-1.4 1.2.2 1.7 1.5 1.1 2.6-.8 1.4-3.7 3.3-3.7 3.3z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+    </div><!-- /scroll -->
+
+    <!-- ===== BOTONES INFERIORES (footer) ===== -->
+    <div class="actions">
+      <!-- Pass: X en círculo blanco neutro -->
+      <button class="act pass" aria-label="Pasar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <!-- SuperSwipe: estrella negra de 5 puntas en círculo amarillo -->
+      <button class="act sup" aria-label="SuperSwipe">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 5.95 6.5.95-4.7 4.6 1.1 6.5L12 17.3 6.2 20.5l1.1-6.5L2.6 9.4l6.5-.95z"/></svg>
+      </button>
+      <!-- Like: corazón amarillo -->
+      <button class="act like" aria-label="Me gusta">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg>
+      </button>
+    </div>
+
+  </div><!-- /phone -->
+</body>
+</html>
