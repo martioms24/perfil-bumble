@@ -224,6 +224,53 @@
     body{background:#fff;}
     .phone{width:100vw;height:100vh;max-height:none;border-radius:0;box-shadow:none;}
   }
+
+  /* ---------- Animación "Beso!!" al dar Me gusta ---------- */
+  .kiss-overlay{
+    position:absolute;inset:0;
+    z-index:200;
+    pointer-events:none;
+    overflow:hidden;
+    background:transparent;
+    opacity:0;visibility:hidden;
+    transition:background-color .7s ease, opacity .35s ease;
+  }
+  .kiss-overlay.active{opacity:1;visibility:visible;}
+  .kiss-overlay.fill{background-color:var(--bumble);}
+
+  .kiss-heart{
+    position:absolute;bottom:-70px;
+    color:var(--bumble);
+    will-change:transform,opacity;
+    animation:kiss-rise linear forwards;
+  }
+  .kiss-heart svg{
+    width:100%;height:100%;display:block;
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,.10));
+  }
+  @keyframes kiss-rise{
+    0%  {transform:translateY(0) scale(.25) rotate(var(--rot));opacity:0;}
+    12% {opacity:1;}
+    100%{transform:translateY(var(--dist)) scale(var(--scl)) rotate(var(--rot));opacity:1;}
+  }
+
+  .kiss-text{
+    position:absolute;left:0;right:0;top:50%;
+    transform:translateY(-50%) scale(.4);
+    text-align:center;
+    font-size:72px;font-weight:900;letter-spacing:-1.5px;
+    color:var(--ink);
+    opacity:0;z-index:5;
+    text-shadow:0 4px 14px rgba(0,0,0,.12);
+  }
+  .kiss-overlay.show-text .kiss-text{
+    animation:kiss-pop .55s cubic-bezier(.2,1.35,.4,1) forwards;
+  }
+  @keyframes kiss-pop{
+    0%  {opacity:0;transform:translateY(-50%) scale(.4);}
+    60% {opacity:1;transform:translateY(-50%) scale(1.14);}
+    100%{opacity:1;transform:translateY(-50%) scale(1);}
+  }
 </style>
 </head>
 <body>
@@ -504,6 +551,51 @@ En mi tiempo libre me encontrarás leyendo poesía feminista, tocando la guitarr
       </button>
     </div>
 
+    <!-- ===== OVERLAY ANIMACIÓN "BESO!!" ===== -->
+    <div class="kiss-overlay" id="kissOverlay" aria-hidden="true">
+      <div class="kiss-text">Beso!!</div>
+    </div>
+
   </div><!-- /phone -->
+
+  <script>
+  (function(){
+    var overlay = document.getElementById('kissOverlay');
+    var HEART = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg>';
+    var running = false;
+
+    function spawnHeart(){
+      var h = document.createElement('div');
+      h.className = 'kiss-heart';
+      var size = 24 + Math.random()*52;
+      h.style.width = size + 'px';
+      h.style.height = size + 'px';
+      h.style.left = (Math.random()*100) + '%';
+      h.style.setProperty('--dist', '-' + (overlay.clientHeight * (0.65 + Math.random()*0.5) + 90) + 'px');
+      h.style.setProperty('--scl', (0.85 + Math.random()*0.9).toFixed(2));
+      h.style.setProperty('--rot', (Math.random()*60 - 30).toFixed(1) + 'deg');
+      h.style.animationDuration = (1.5 + Math.random()*1.5).toFixed(2) + 's';
+      h.innerHTML = HEART;
+      overlay.appendChild(h);
+    }
+
+    function triggerKiss(){
+      if (running) return;
+      running = true;
+      overlay.classList.add('active');
+      var total = 80;
+      for (var i = 0; i < total; i++){
+        setTimeout(spawnHeart, i * 28);
+      }
+      setTimeout(function(){ overlay.classList.add('fill'); }, 1200);
+      setTimeout(function(){ overlay.classList.add('show-text'); }, 1650);
+    }
+
+    // Cualquier botón "Me gusta" (footer o por tarjeta) dispara la animación.
+    document.querySelectorAll('.like').forEach(function(btn){
+      btn.addEventListener('click', triggerKiss);
+    });
+  })();
+  </script>
 </body>
 </html>
