@@ -233,24 +233,33 @@
     overflow:hidden;
     background:transparent;
     opacity:0;visibility:hidden;
-    transition:background-color .7s ease, opacity .35s ease;
+    transition:background-color .9s ease, opacity .3s ease;
   }
   .kiss-overlay.active{opacity:1;visibility:visible;}
   .kiss-overlay.fill{background-color:var(--bumble);}
+
+  /* Capa de corazones: se funde a 0 para "unirse" al fondo amarillo
+     sin dejar corazones sueltos por encima. */
+  .kiss-hearts{
+    position:absolute;inset:0;
+    opacity:1;
+    transition:opacity .8s ease;
+  }
+  .kiss-overlay.merge .kiss-hearts{opacity:0;}
 
   .kiss-heart{
     position:absolute;bottom:-70px;
     color:var(--bumble);
     will-change:transform,opacity;
-    animation:kiss-rise linear forwards;
+    animation:kiss-rise ease-out forwards;
   }
   .kiss-heart svg{
     width:100%;height:100%;display:block;
-    filter:drop-shadow(0 3px 5px rgba(0,0,0,.10));
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.08));
   }
   @keyframes kiss-rise{
-    0%  {transform:translateY(0) scale(.25) rotate(var(--rot));opacity:0;}
-    12% {opacity:1;}
+    0%  {transform:translateY(0) scale(.2) rotate(var(--rot));opacity:0;}
+    14% {opacity:1;}
     100%{transform:translateY(var(--dist)) scale(var(--scl)) rotate(var(--rot));opacity:1;}
   }
 
@@ -553,6 +562,7 @@ En mi tiempo libre me encontrarás leyendo poesía feminista, tocando la guitarr
 
     <!-- ===== OVERLAY ANIMACIÓN "BESO!!" ===== -->
     <div class="kiss-overlay" id="kissOverlay" aria-hidden="true">
+      <div class="kiss-hearts" id="kissHearts"></div>
       <div class="kiss-text">Beso!!</div>
     </div>
 
@@ -561,34 +571,46 @@ En mi tiempo libre me encontrarás leyendo poesía feminista, tocando la guitarr
   <script>
   (function(){
     var overlay = document.getElementById('kissOverlay');
+    var hearts  = document.getElementById('kissHearts');
     var HEART = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.3-8.2C1 9.9 2.3 6.5 5.5 6.1 7.6 5.8 9.2 7 12 9.5 14.8 7 16.4 5.8 18.5 6.1c3.2.4 4.5 3.8 2.8 6.7C19 16.4 12 21 12 21z"/></svg>';
     var running = false;
 
-    function spawnHeart(){
+    // progress 0→1: los corazones crecen y suben menos a medida que avanza,
+    // así se acumulan y tapan la pantalla de amarillo de forma continua.
+    function spawnHeart(progress){
       var h = document.createElement('div');
       h.className = 'kiss-heart';
-      var size = 24 + Math.random()*52;
+      var size = 26 + Math.random()*46 + progress*36;
       h.style.width = size + 'px';
       h.style.height = size + 'px';
       h.style.left = (Math.random()*100) + '%';
-      h.style.setProperty('--dist', '-' + (overlay.clientHeight * (0.65 + Math.random()*0.5) + 90) + 'px');
-      h.style.setProperty('--scl', (0.85 + Math.random()*0.9).toFixed(2));
-      h.style.setProperty('--rot', (Math.random()*60 - 30).toFixed(1) + 'deg');
-      h.style.animationDuration = (1.5 + Math.random()*1.5).toFixed(2) + 's';
+      var rise = overlay.clientHeight * (0.45 + Math.random()*0.55) + 80;
+      h.style.setProperty('--dist', '-' + rise + 'px');
+      h.style.setProperty('--scl', (1.0 + Math.random()*0.7 + progress*0.6).toFixed(2));
+      h.style.setProperty('--rot', (Math.random()*50 - 25).toFixed(1) + 'deg');
+      h.style.animationDuration = (1.7 + Math.random()*1.4).toFixed(2) + 's';
       h.innerHTML = HEART;
-      overlay.appendChild(h);
+      hearts.appendChild(h);
     }
 
     function triggerKiss(){
       if (running) return;
       running = true;
       overlay.classList.add('active');
-      var total = 80;
+
+      // Emisión continua y densa de corazones durante ~1,1 s.
+      var total = 130;
+      var spawnMs = 1100;
       for (var i = 0; i < total; i++){
-        setTimeout(spawnHeart, i * 28);
+        (function(p){ setTimeout(function(){ spawnHeart(p); }, p * spawnMs); })(i / total);
       }
-      setTimeout(function(){ overlay.classList.add('fill'); }, 1200);
-      setTimeout(function(){ overlay.classList.add('show-text'); }, 1650);
+
+      // El fondo amarillo sube por debajo mientras aún llegan corazones.
+      setTimeout(function(){ overlay.classList.add('fill'); }, 950);
+      // Los corazones (mismo amarillo) se funden con el fondo: solo queda amarillo.
+      setTimeout(function(){ overlay.classList.add('merge'); }, 1750);
+      // "Beso!!" aparece sobre el amarillo limpio.
+      setTimeout(function(){ overlay.classList.add('show-text'); }, 2150);
     }
 
     // Cualquier botón "Me gusta" (footer o por tarjeta) dispara la animación.
